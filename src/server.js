@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 
-const cors = require('cors');
-
 const allowedOrigins = [
   'https://sistemahospd-front.t4kpnp.easypanel.host',
   'http://localhost:5173' // Apenas para testes locais
