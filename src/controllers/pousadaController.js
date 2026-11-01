@@ -48,3 +48,25 @@ exports.criarReserva = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+const pool = require('../config/database');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'hospd_secret_key_2026';
+
+exports.login = async (req, res) => {
+  const { usuario, senha } = req.body;
+  
+  // Autenticação simples inicial (podes integrar com a tabela de utilizadores no MySQL depois)
+  if (usuario === 'admin' && senha === 'admin123') {
+    const token = jwt.sign(
+      { id: 1, usuario: 'admin', funcao: 'gerente' },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    return res.json({ token, usuario: { nome: 'Administrador', usuario: 'admin' } });
+  }
+  return res.status(401).json({ error: 'Utilizador ou palavra-passe incorretos.' });
+};
+
+// ... mantém os outros métodos (getQuartos, getReservas, etc.)
