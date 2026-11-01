@@ -6,6 +6,17 @@ const allowedOrigins = [
   'http://localhost:5173' // Apenas para testes locais
 ];
 
+
+
+require('dotenv').config();
+
+const apiRoutes = require('./routes/api');
+
+const app = express();
+const PORT = process.env.PORT || 80;
+
+app.use(express.json());
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -16,15 +27,6 @@ app.use(cors({
   },
   credentials: true
 }));
-
-require('dotenv').config();
-
-const apiRoutes = require('./routes/api');
-
-const app = express();
-const PORT = process.env.PORT || 80;
-
-app.use(express.json());
 
 // Rotas da API
 app.use('/api', apiRoutes);
