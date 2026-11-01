@@ -1,5 +1,24 @@
 const express = require('express');
 const cors = require('cors');
+
+const cors = require('cors');
+
+const allowedOrigins = [
+  'https://sistemahospd-front.t4kpnp.easypanel.host',
+  'http://localhost:5173' // Apenas para testes locais
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Acesso não permitido por política de CORS'));
+    }
+  },
+  credentials: true
+}));
+
 require('dotenv').config();
 
 const apiRoutes = require('./routes/api');
