@@ -1,38 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const controller = require('../controllers/pousadaController');
+const auth = require('../middleware/auth');
 
-// Middlewares
-const authMiddleware = require('../middleware/auth');
+// Rota pública de login
+router.post('/login', controller.login);
 
-// Controladores
-const authController = require('../controllers/authController');
-const quartoController = require('../controllers/quartoController');
-const reservaController = require('../controllers/reservaController');
-const usuarioController = require('../controllers/usuarioController');
-const produtoController = require('../controllers/produtoController');
+// Proteção global para as rotas abaixo
+router.use(auth);
 
-// 1. Rota pública de login
-router.post('/login', authController.login);
+// Quartos
+router.get('/quarto', controller.getQuartos);
+router.put('/quarto/:id/status', controller.atualizarStatusQuarto);
 
-// 2. Proteção global para todas as rotas abaixo (Exige JWT ou API Key)
-router.use(authMiddleware);
+// Reservas, Check-in, Check-out e Consumo
+router.get('/reserva', controller.getReservas);
+router.post('/reserva', controller.criarReserva);
+router.post('/reserva/:id/checkin', controller.fazerCheckin);
+router.post('/reserva/:id/checkout', controller.fazerCheckout);
+router.post('/reserva/:id/consumo', controller.lancarConsumo);
 
-// 3. Rotas de Quartos
-router.get('/quarto', quartoController.getQuartos);
-router.put('/quarto/:id/status', quartoController.atualizarStatusQuarto);
-
-// 4. Rotas de Reservas, Check-in, Check-out e Consumo
-router.get('/reserva', reservaController.getReservas);
-router.post('/reserva', reservaController.criarReserva);
-router.post('/reserva/:id/checkin', reservaController.fazerCheckin);
-router.post('/reserva/:id/checkout', reservaController.fazerCheckout);
-router.post('/reserva/:id/consumo', reservaController.lancarConsumo);
-
-// 5. Rotas de Usuários
-router.get('/usuario', usuarioController.getUsuarios);
-router.post('/usuario', usuarioController.criarUsuario);
-
-// 6. Rotas de Produtos
-router.get('/produto', produtoController.getProdutos);
+// Produtos
+router.get('/produto', controller.getProdutos);
 
 module.exports = router;
