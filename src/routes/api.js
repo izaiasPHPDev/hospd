@@ -18,6 +18,7 @@ router.get('/reserva', auth, pousadaController.getReservas);
 router.post('/reserva', auth, pousadaController.criarReserva);
 router.post('/reserva/:id/checkin', auth, reservaController.fazerCheckin);
 router.post('/reserva/:id/checkout', auth, reservaController.fazerCheckout);
+router.post('/reserva/:id/consumo', authMiddleware, reservaController.lancarConsumo);
 
 // Quartos & Produtos
 router.get('/quarto', auth, pousadaController.getQuartos);
