@@ -168,23 +168,34 @@ exports.fazerCheckout = async (req, res) => {
 
 // 5. Consumo de Produtos
 exports.lancarConsumo = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // ID enviado (pode ser o ID da reserva ou do quarto)
   const { produto_id, quantidade } = req.body;
+
   try {
-    const [produto] = await pool.query('SELECT preco FROM produto WHERE id = ?', [produto_id]);
-    if (produto.length === 0) {
+    // 1. Busca o preço do produto
+    const [produtos] = await pool.query('SELECT preco FROM produto WHERE id = ?', [produto_id]);
+    if (produtos.length === 0) {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
+    const valorUnitario = produtos[0].preco;
 
-    const valorUnitario = produto[0].preco;
+    // 2. Tenta localizar uma reserva ativa com esse ID ou vinculada ao quarto
+    const [reservas] = await pool.query(
+      "SELECT id FROM reserva WHERE id = ? OR (quarto_id = ? AND status = 'checkin') ORDER BY id DESC LIMIT 1",
+      [id, id]
+    );
 
+    let reservaId = reservas.length > 0 ? reservas[0].id : null;
+
+    // 3. Insere o consumo na base de dados
     await pool.query(
-      'INSERT INTO consumo (reserva_id, produto_id, quantidade, valor_unitario) VALUES (?, ?, ?, ?)',
-      [id, produto_id, quantidade || 1, valorUnitario]
+      'INSERT INTO consumo (reserva_id, quarto_id, produto_id, quantidade, valor_unitario) VALUES (?, ?, ?, ?, ?)',
+      [reservaId, id, produto_id, quantidade || 1, valorUnitario]
     );
 
     res.status(201).json({ message: 'Consumo lançado com sucesso!' });
   } catch (error) {
+    console.error('Erro no SQL de consumo:', error);
     res.status(500).json({ error: 'Erro ao lançar consumo.' });
   }
 };
