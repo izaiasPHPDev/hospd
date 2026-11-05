@@ -168,35 +168,46 @@ exports.fazerCheckout = async (req, res) => {
 
 // 5. Consumo de Produtos
 exports.lancarConsumo = async (req, res) => {
-  const { id } = req.params; // ID enviado (pode ser o ID da reserva ou do quarto)
+  const { id } = req.params; // ID enviado (da reserva ou do quarto)
   const { produto_id, quantidade } = req.body;
 
   try {
-    // 1. Busca o preço do produto
+    // 1. Obter valor unitário do produto
     const [produtos] = await pool.query('SELECT preco FROM produto WHERE id = ?', [produto_id]);
     if (produtos.length === 0) {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
     const valorUnitario = produtos[0].preco;
 
-    // 2. Tenta localizar uma reserva ativa com esse ID ou vinculada ao quarto
+    // 2. Localizar reserva ativa associada (por id ou pelo quarto)
     const [reservas] = await pool.query(
       "SELECT id FROM reserva WHERE id = ? OR (quarto_id = ? AND status = 'checkin') ORDER BY id DESC LIMIT 1",
       [id, id]
     );
 
-    let reservaId = reservas.length > 0 ? reservas[0].id : null;
+    const reservaId = reservas.length > 0 ? reservas[0].id : null;
 
-    // 3. Insere o consumo na base de dados
-    await pool.query(
-      'INSERT INTO consumo (reserva_id, quarto_id, produto_id, quantidade, valor_unitario) VALUES (?, ?, ?, ?, ?)',
-      [reservaId, id, produto_id, quantidade || 1, valorUnitario]
-    );
+    // 3. Inserção resiliente com fallback caso a coluna quarto_id ainda não exista
+    try {
+      await pool.query(
+        'INSERT INTO consumo (reserva_id, quarto_id, produto_id, quantidade, valor_unitario) VALUES (?, ?, ?, ?, ?)',
+        [reservaId, id, produto_id, quantidade || 1, valorUnitario]
+      );
+    } catch (dbErr) {
+      if (reservaId) {
+        await pool.query(
+          'INSERT INTO consumo (reserva_id, produto_id, quantidade, valor_unitario) VALUES (?, ?, ?, ?)',
+          [reservaId, produto_id, quantidade || 1, valorUnitario]
+        );
+      } else {
+        throw dbErr;
+      }
+    }
 
-    res.status(201).json({ message: 'Consumo lançado com sucesso!' });
+    return res.status(201).json({ message: 'Consumo lançado com sucesso!' });
   } catch (error) {
-    console.error('Erro no SQL de consumo:', error);
-    res.status(500).json({ error: 'Erro ao lançar consumo.' });
+    console.error('Erro ao lançar consumo:', error.message);
+    return res.status(500).json({ error: `Erro ao lançar consumo: ${error.message}` });
   }
 };
 
